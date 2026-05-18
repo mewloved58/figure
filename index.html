@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>유주의 도형 탐험대</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#f5f6f8;--surface:#fff;--surface-2:#f7f9fc;--text:#1f2937;--muted:#64748b;
+  --brand:#5a74ff;--accent:#f3b37d;--mint:#67c6b8;--danger:#ef6b6b;
+  --r-lg:24px;--r-md:16px;--r-sm:12px;
+  --s1:8px;--s2:12px;--s3:16px;--s4:24px;--s5:32px;--s6:48px;
+  --shadow:0 12px 28px rgba(31,41,55,.08);--shadow-soft:0 6px 14px rgba(31,41,55,.06);
+  --tr:240ms cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Pretendard',system-ui,sans-serif;background:linear-gradient(180deg,#edf2fb,var(--bg));color:var(--text);min-height:100vh}
+.app{max-width:1080px;margin:0 auto;padding:16px 16px 64px}
+.hero{position:relative;padding:28px;border-radius:28px;background:linear-gradient(145deg,#ebf2ff,#fff7ef);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px}
+.hero:before{content:'';position:absolute;right:-70px;top:-70px;width:220px;height:220px;background:radial-gradient(circle,#fff,transparent 68%)}
+.hero-top{display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:56px;animation:float 4s ease-in-out infinite}.sun{font-size:32px;opacity:.85}
+.hero h1{font-family:'Nunito',sans-serif;font-size:clamp(28px,5vw,40px);margin-top:8px;letter-spacing:-.02em}
+.hero p{margin-top:6px;color:var(--muted)}
+
+nav{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:20px 0 28px}
+.tab-btn{min-height:52px;padding:10px;border:0;border-radius:14px;background:var(--surface);box-shadow:var(--shadow-soft);font-weight:700;color:#334155;cursor:pointer;transition:all var(--tr)}
+.tab-btn.active{background:#e7eeff;color:#2e48c9;box-shadow:0 8px 18px rgba(90,116,255,.24)}
+
+.section{display:none;opacity:0;transform:translateY(8px);transition:all .3s ease}
+.section.active{display:block;opacity:1;transform:none}
+.section-head{text-align:center;margin-bottom:20px}
+.section-head h2{font-family:'Nunito';font-size:30px}
+.section-head p{color:var(--muted);margin-top:4px}
+
+.grid{display:grid;gap:14px}
+.home-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.shapes-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));max-width:920px;margin:0 auto}
+.card{background:var(--surface);border-radius:var(--r-md);padding:16px;box-shadow:var(--shadow-soft);transition:all var(--tr)}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.home-card{cursor:pointer}.home-card .emoji{font-size:42px;display:block;margin-bottom:8px}
+.home-card h3{font-family:'Nunito';font-size:19px}.home-card p{color:var(--muted);font-size:13px}
+
+.story-list{display:flex;flex-direction:column;gap:10px;max-width:680px;margin:0 auto}
+.story-card{display:flex;align-items:center;gap:14px;cursor:pointer}.story-icon{font-size:38px}.story-badge{margin-left:auto;color:#2e48c9;font-weight:700}
+.story-viewer{display:none;max-width:680px;margin:0 auto}.story-viewer.active{display:block}
+.sv-emoji{font-size:72px;text-align:center}.sv-title{font-family:'Nunito';font-size:26px;text-align:center;margin-top:8px}
+.sv-text{margin-top:12px;padding:16px;border-radius:14px;background:#f8fbff;color:#334155;line-height:1.75;white-space:pre-line}
+.sv-shape{margin-top:14px;display:flex;justify-content:center}.story-actions{display:flex;justify-content:center;gap:10px;margin-top:14px}
+
+button{min-height:48px;padding:10px 18px;border:0;border-radius:12px;font-weight:700;cursor:pointer}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 8px 16px rgba(90,116,255,.25)}
+.btn-soft{background:#edf1f7;color:#334155}
+
+.dict-filter{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.filter-btn{background:#fff;border:1px solid #dce5f2;color:#334155}.filter-btn.active{background:#e8faf6;border-color:#bbe8df;color:#1d7567}
+.shape-card{text-align:center;cursor:pointer}.shape-card h4{margin-top:8px}.shape-card canvas{display:block;margin:0 auto;border-radius:12px}
+.sc-tag{margin-top:6px;display:inline-block;padding:2px 10px;border-radius:999px;background:#ecf2ff;color:#3553c7;font-size:11px}.drag-hint{font-size:11px;color:#7b8794;margin-top:3px}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);backdrop-filter:blur(4px);z-index:50;padding:20px;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#fff;border-radius:24px;width:min(460px,100%);padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.22)}
+#modal-canvas-wrap,#q-canvas-wrap{background:radial-gradient(circle at 30% 20%,#fff,#e8f0ff);border-radius:16px;box-shadow:inset 0 2px 10px rgba(0,0,0,.06)}
+#modal-canvas-wrap{width:260px;height:260px;margin:0 auto 12px}.modal h2{font-family:'Nunito';text-align:center;font-size:30px}
+.m-desc{margin-top:8px;background:#f8fbff;padding:12px;border-radius:12px;line-height:1.7;color:#334155}.m-ex{margin-top:8px;color:var(--muted)}
+
+#quiz-home,#quiz-game,#quiz-result{max-width:560px;margin:0 auto}.stars{letter-spacing:3px;font-size:28px;text-align:center;margin:10px 0}
+.quiz-question{text-align:center}.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.q-opt{background:#eef2ff;color:#31446f}
+.q-feedback{display:none;margin-top:12px;padding:12px;border-radius:12px;font-weight:700;text-align:center}.q-feedback.show{display:block}.ok{background:#e9fbee;color:#12683f}.ng{background:#fff0f0;color:#9a2d2d}
+
+.chat-box{height:300px;overflow:auto;background:#f7fbff;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow-soft)}
+.chat-msg{max-width:82%;padding:10px 12px;border-radius:14px;line-height:1.6}.dodo-msg{align-self:flex-start;background:#fff;border:1px solid #dce7ff}.user-msg{align-self:flex-end;background:#e6edff}
+.chat-input-row{margin-top:10px;display:flex;gap:8px}.chat-input{flex:1;border:1px solid #d4deef;border-radius:12px;min-height:48px;padding:0 12px}
+
+@keyframes float{50%{transform:translateY(-5px)}}
+@media (max-width:760px){nav{grid-template-columns:repeat(3,1fr)}.quiz-options{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="hero"><div class="hero-top"><div class="logo">🦤</div><div class="sun">☀️</div></div><h1>유주의 도형 탐험대</h1><p>도도와 함께 도형 왕국을 탐험해요!</p></header>
+<nav>
+<button class="tab-btn active" data-tab="home" onclick="showSection('home')">🏠 홈</button><button class="tab-btn" data-tab="story" onclick="showSection('story')">📖 스토리</button><button class="tab-btn" data-tab="dict" onclick="showSection('dict')">📚 도감</button><button class="tab-btn" data-tab="quiz" onclick="showSection('quiz')">🎮 퀴즈</button><button class="tab-btn" data-tab="chat" onclick="showSection('chat')">💬 채팅</button>
+</nav>
+<section id="home" class="section active"><div class="grid home-grid"><div class="card home-card" onclick="showSection('story')"><span class="emoji">📖</span><h3>스토리 월드</h3><p>도도와 함께 모험</p></div><div class="card home-card" onclick="showSection('dict')"><span class="emoji">📚</span><h3>도형 도감</h3><p>22개 도형 학습</p></div><div class="card home-card" onclick="showSection('quiz')"><span class="emoji">⭐</span><h3>퀴즈 게임</h3><p>별 모으기</p></div><div class="card home-card" onclick="showSection('chat')"><span class="emoji">🦤</span><h3>도도에게 물어봐</h3><p>궁금한 도형 질문</p></div></div></section>
+<section id="story" class="section"><div class="section-head"><h2>📖 스토리 월드</h2><p>도도와 함께 도형 왕국 여행</p></div><div class="story-list" id="story-list"></div><div class="story-viewer card" id="story-viewer"><div class="sv-emoji" id="sv-emoji"></div><div class="sv-title" id="sv-title"></div><div class="sv-text" id="sv-text"></div><div class="sv-shape" id="sv-shape"></div><div class="story-actions"><button class="btn-soft" onclick="closeStory()">돌아가기</button><button class="btn-primary" id="sv-next-btn" onclick="nextStoryPage()">다음</button></div></div></section>
+<section id="dict" class="section"><div class="section-head"><h2>📚 도형 도감</h2><p>도형을 눌러서 자세히 살펴보세요</p></div><div class="dict-filter"><button class="filter-btn active" onclick="filterShapes('all',this)">전체</button><button class="filter-btn" onclick="filterShapes('2d',this)">2D</button><button class="filter-btn" onclick="filterShapes('3d',this)">3D</button><button class="filter-btn" onclick="filterShapes('easy',this)">쉬움</button><button class="filter-btn" onclick="filterShapes('hard',this)">도전</button></div><div class="grid shapes-grid" id="shapes-grid"></div></section>
+<section id="quiz" class="section"><div id="quiz-home" class="card"><h2 style="text-align:center">🎮 퀴즈 게임</h2><div class="stars" id="star-display">☆☆☆☆☆</div><p id="star-count-text" style="text-align:center;color:#64748b">모은 별: 0개</p><div style="text-align:center;margin-top:10px"><button class="btn-primary" onclick="startQuiz()">퀴즈 시작</button></div></div><div id="quiz-game" style="display:none"><div id="q-num" style="text-align:center;color:#64748b;margin-bottom:8px"></div><div class="card quiz-question"><div id="q-canvas-wrap" style="width:170px;height:170px;margin:0 auto 10px"></div><p>이 도형의 이름은?</p></div><div class="quiz-options" id="q-options"></div><div class="q-feedback" id="q-feedback"></div></div><div id="quiz-result" class="card" style="display:none;text-align:center"><h2 id="result-title"></h2><div class="stars" id="result-stars"></div><p id="result-desc" style="color:#64748b"></p><button class="btn-primary" onclick="retryQuiz()">다시 도전</button></div></section>
+<section id="chat" class="section"><div class="section-head"><h2>💬 도도에게 물어봐!</h2><p>도형에 대해 질문하면 도도가 알려줘요</p></div><div class="chat-box" id="chat-box"><div class="chat-msg dodo-msg">안녕! 나는 도도야 🦤 도형 질문을 해줘 😊</div></div><div class="chat-input-row"><input class="chat-input" id="chat-input" onkeydown="if(event.key==='Enter')sendChat()" placeholder="삼각형이 뭐야?"/><button class="btn-primary" onclick="sendChat()">보내기</button></div></section>
+</div>
+<div class="modal-overlay" id="modal" onclick="closeModal(event)"><div class="modal"><div id="modal-canvas-wrap"></div><h2 id="modal-name"></h2><div class="m-desc" id="modal-desc"></div><div class="m-ex" id="modal-ex"></div><div style="display:flex;justify-content:center;margin-top:12px"><button class="btn-soft" onclick="closeModal()">닫기</button></div></div></div>
+<script>
+const shapes=[
+{id:'circle',name:'원',dim:'2d',level:'easy',color:0xFF7F6E,desc:'원은 동그란 모양이에요. 꼭짓점과 변이 없어요.',ex:'달, 공'},
+{id:'triangle',name:'삼각형',dim:'2d',level:'easy',color:0x72E0C8,desc:'변 3개, 꼭짓점 3개예요.',ex:'피자 조각'},
+{id:'square',name:'정사각형',dim:'2d',level:'easy',color:0xC9A8F5,desc:'네 변 길이가 같아요.',ex:'창문'},
+{id:'rectangle',name:'직사각형',dim:'2d',level:'easy',color:0xFFD84D,desc:'네 각이 직각이에요.',ex:'책, TV'},
+{id:'star',name:'별',dim:'2d',level:'easy',color:0xFFB38A,desc:'뾰족한 꼭짓점이 있어요.',ex:'밤하늘 별'},
+{id:'heart',name:'하트',dim:'2d',level:'easy',color:0xFF6B8A,desc:'사랑을 뜻하는 모양이에요.',ex:'스티커'},
+{id:'hexagon',name:'육각형',dim:'2d',level:'mid',color:0x3EC8AA,desc:'변이 6개예요.',ex:'벌집'},
+{id:'octagon',name:'팔각형',dim:'2d',level:'mid',color:0x9B6ADE,desc:'변이 8개예요.',ex:'정지표지판'},
+{id:'rhombus',name:'마름모',dim:'2d',level:'mid',color:0xF5A623,desc:'네 변 길이가 같아요.',ex:'연'},
+{id:'parallelogram',name:'평행사변형',dim:'2d',level:'mid',color:0xFF9060,desc:'마주 보는 변이 평행해요.',ex:'기울어진 책'},
+{id:'trapezoid',name:'사다리꼴',dim:'2d',level:'mid',color:0x50C8A0,desc:'한 쌍의 변만 평행해요.',ex:'사다리 모양'},
+{id:'ellipse',name:'타원',dim:'2d',level:'hard',color:0xFF5566,desc:'납작한 원 모양이에요.',ex:'달걀'},
+{id:'pentagon',name:'오각형',dim:'2d',level:'hard',color:0x7B5EA7,desc:'변이 5개예요.',ex:'축구공 조각'},
+{id:'sphere',name:'구',dim:'3d',level:'easy',color:0x44CCAA,desc:'완전히 둥근 입체예요.',ex:'공'},
+{id:'cube',name:'정육면체',dim:'3d',level:'easy',color:0xFFCC33,desc:'정사각형 6개 면으로 이루어져요.',ex:'주사위'},
+{id:'cone',name:'원뿔',dim:'3d',level:'easy',color:0xFF6655,desc:'아래는 원, 위는 뾰족해요.',ex:'아이스크림 콘'},
+{id:'cylinder',name:'원기둥',dim:'3d',level:'easy',color:0xAA88FF,desc:'원 모양 위아래 면이 있어요.',ex:'캔'},
+{id:'tetrahedron',name:'삼각뿔',dim:'3d',level:'mid',color:0xFFAA55,desc:'삼각형 4면으로 구성돼요.',ex:'피라미드'},
+{id:'cuboid',name:'직육면체',dim:'3d',level:'mid',color:0x55CCAA,desc:'직사각형 6면으로 구성돼요.',ex:'택배 상자'},
+{id:'prism',name:'삼각기둥',dim:'3d',level:'mid',color:0xEECC44,desc:'삼각형 면 2개와 직사각형 면 3개예요.',ex:'텐트'},
+{id:'pyramid',name:'오각뿔',dim:'3d',level:'hard',color:0xBB88EE,desc:'오각형 바닥과 삼각형 옆면이 있어요.',ex:'보석'},
+{id:'torus',name:'도넛',dim:'3d',level:'hard',color:0xFF7799,desc:'가운데 구멍이 있는 입체예요.',ex:'도넛'}
+];
+const stories=[{emoji:'🌈',title:'1화 — 도형 왕국에 도착!',pages:[{text:'도도는 무지개를 따라 도형 왕국에 도착했어요!',shape:'circle'},{text:'원 임금님과 삼각형 기사를 만났어요.',shape:'triangle'}]},{emoji:'🏰',title:'2화 — 사각형 성의 비밀',pages:[{text:'성에는 정사각형과 직사각형 친구들이 있었어요.',shape:'square'},{text:'모두 반듯하고 튼튼했어요.',shape:'rectangle'}]},{emoji:'⭐',title:'3화 — 별 숲 대모험',pages:[{text:'반짝이는 별과 하트를 찾았어요!',shape:'star'},{text:'친구들에게 사랑과 용기를 배웠어요.',shape:'heart'}]}];
+const $=id=>document.getElementById(id);
+function showSection(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));$(id).classList.add('active');document.querySelector(`[data-tab='${id}']`).classList.add('active')}
+function draw2D(c,id,color,size){const x=c.getContext('2d');c.width=size;c.height=size;const h=size/2,r=size*.34;x.clearRect(0,0,size,size);x.lineWidth=4;x.strokeStyle='#2f3f56';x.fillStyle='#'+color.toString(16).padStart(6,'0');x.beginPath();if(id==='circle')x.arc(h,h,r,0,Math.PI*2);else if(id==='triangle'){x.moveTo(h,h-r);x.lineTo(h+r*.9,h+r*.8);x.lineTo(h-r*.9,h+r*.8);x.closePath();}else if(id==='star'){for(let i=0;i<10;i++){const a=(i/5)*Math.PI-Math.PI/2,rr=i%2?r*.45:r; i?x.lineTo(h+Math.cos(a)*rr,h+Math.sin(a)*rr):x.moveTo(h+Math.cos(a)*rr,h+Math.sin(a)*rr)}x.closePath();}else{x.roundRect(h-r,h-r,r*2,r*2,12)}x.fill();x.stroke();}
+function geo(id){switch(id){case'sphere':return new THREE.SphereGeometry(1.1,48,48);case'cube':return new THREE.BoxGeometry(1.7,1.7,1.7);case'cone':return new THREE.ConeGeometry(1.1,2.2,48);case'cylinder':return new THREE.CylinderGeometry(.9,.9,2,48);case'tetrahedron':return new THREE.TetrahedronGeometry(1.4);case'cuboid':return new THREE.BoxGeometry(1.2,.9,1.9);case'prism':{const s=new THREE.Shape();s.moveTo(0,1);s.lineTo(1,-.6);s.lineTo(-1,-.6);s.closePath();return new THREE.ExtrudeGeometry(s,{depth:1.4,bevelEnabled:false});}case'pyramid':return new THREE.ConeGeometry(1.2,2.1,5);case'torus':return new THREE.TorusGeometry(1,.4,24,72);default:return null;}}
+function spawn3D(cv,id,color,size){const r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(size,size);const s=new THREE.Scene();s.add(new THREE.AmbientLight(0xffffff,.58));const d1=new THREE.DirectionalLight(0xffffff,.95);d1.position.set(4,5,4);s.add(d1);const d2=new THREE.DirectionalLight(0xbcd9ff,.35);d2.position.set(-3,-2,4);s.add(d2);const cam=new THREE.PerspectiveCamera(40,1,.1,100);cam.position.z=4.6;const m=new THREE.Mesh(geo(id),new THREE.MeshStandardMaterial({color,metalness:.18,roughness:.33}));if(id==='prism')m.position.set(0,-.1,-.7);s.add(m);let stop=false;(()=>{function loop(){if(stop)return;requestAnimationFrame(loop);m.rotation.y+=.011;m.rotation.x+=.004;r.render(s,cam)}loop()})();return{mesh:m,stop(){stop=true;r.dispose()}}}
+let cardScenes=[],modalRec=null,storyRec=null,quizRec=null;
+function renderShapes(filter='all'){cardScenes.forEach(x=>x.stop());cardScenes=[];const list=filter==='all'?shapes:filter==='2d'?shapes.filter(s=>s.dim==='2d'):filter==='3d'?shapes.filter(s=>s.dim==='3d'):shapes.filter(s=>s.level===filter);$('shapes-grid').innerHTML=list.map(s=>`<div class="card shape-card" onclick="openModal('${s.id}')"><canvas id="cv-${s.id}" style="width:120px;height:120px"></canvas><h4>${s.name}</h4><span class="sc-tag">${s.dim.toUpperCase()}</span>${s.dim==='3d'?'<div class="drag-hint">3D 회전 자동재생</div>':''}</div>`).join('');list.forEach(s=>{const cv=$('cv-'+s.id);if(s.dim==='3d')cardScenes.push(spawn3D(cv,s.id,s.color,120));else draw2D(cv,s.id,s.color,120)})}
+function filterShapes(f,b){document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderShapes(f)}
+function openModal(id){const s=shapes.find(x=>x.id===id);$('modal-name').textContent=s.name;$('modal-desc').textContent=s.desc;$('modal-ex').textContent='생활 예시: '+s.ex;const wrap=$('modal-canvas-wrap');wrap.innerHTML='<canvas id="mcv"></canvas>';const cv=$('mcv');if(modalRec)modalRec.stop();modalRec=s.dim==='3d'?spawn3D(cv,s.id,s.color,260):(draw2D(cv,s.id,s.color,260),null);$('modal').classList.add('active')}
+function closeModal(e){if(!e||e.target.id==='modal'){if(modalRec)modalRec.stop();$('modal').classList.remove('active')}}
+let curStory=0,storyPg=0;function renderStoryList(){$('story-list').innerHTML=stories.map((s,i)=>`<div class="card story-card" onclick="openStory(${i})"><div class="story-icon">${s.emoji}</div><div><h3>${s.title}</h3><p style='color:#64748b'>읽어보기</p></div><div class="story-badge">▶</div></div>`).join('')}
+function openStory(i){curStory=i;storyPg=0;$('story-list').style.display='none';$('story-viewer').classList.add('active');renderStoryPg()} function closeStory(){if(storyRec)storyRec.stop();$('story-list').style.display='flex';$('story-viewer').classList.remove('active')} function nextStoryPage(){storyPg++;if(storyPg>=stories[curStory].pages.length)return closeStory();renderStoryPg()} function renderStoryPg(){const s=stories[curStory],p=s.pages[storyPg];$('sv-emoji').textContent=s.emoji;$('sv-title').textContent=`${s.title} (${storyPg+1}/${s.pages.length})`;$('sv-text').textContent=p.text;$('sv-next-btn').textContent=storyPg===s.pages.length-1?'완료':'다음';if(storyRec)storyRec.stop();$('sv-shape').innerHTML='';if(p.shape){const sh=shapes.find(x=>x.id===p.shape),cv=document.createElement('canvas');cv.style.width='120px';cv.style.height='120px';$('sv-shape').appendChild(cv);if(sh.dim==='3d')storyRec=spawn3D(cv,sh.id,sh.color,120);else draw2D(cv,sh.id,sh.color,120)}}
+let totalStars=0,quizQs=[],currentQ=0;function startQuiz(){quizQs=[...shapes].sort(()=>Math.random()-.5).slice(0,8);currentQ=0;totalStars=0;$('quiz-home').style.display='none';$('quiz-result').style.display='none';$('quiz-game').style.display='block';renderQuiz()} function renderQuiz(){const q=quizQs[currentQ];$('q-num').textContent=`${currentQ+1} / ${quizQs.length}`;if(quizRec)quizRec.stop();$('q-canvas-wrap').innerHTML='<canvas id="qcv"></canvas>';const cv=$('qcv');if(q.dim==='3d')quizRec=spawn3D(cv,q.id,q.color,170);else draw2D(cv,q.id,q.color,170);const opts=[q,...shapes.filter(s=>s.id!==q.id).sort(()=>Math.random()-.5).slice(0,3)].sort(()=>Math.random()-.5);$('q-options').innerHTML=opts.map(o=>`<button class='q-opt' onclick="answerQuiz('${o.id}','${q.id}',this)">${o.name}</button>`).join('');$('q-feedback').className='q-feedback'} function answerQuiz(c,a,el){const fb=$('q-feedback');if(c===a){el.classList.add('btn-primary');fb.className='q-feedback show ok';fb.textContent='정답이에요!';totalStars++;}else{fb.className='q-feedback show ng';fb.textContent='아쉬워요!';}setTimeout(()=>{currentQ++;if(currentQ>=quizQs.length)showResult();else renderQuiz()},1200)} function showResult(){if(quizRec)quizRec.stop();$('quiz-game').style.display='none';$('quiz-result').style.display='block';$('result-title').textContent='퀴즈 완료!';$('result-desc').textContent=`${quizQs.length}문제 중 ${totalStars}개 맞았어요`;const s=Math.round(totalStars/quizQs.length*5);$('result-stars').textContent='⭐'.repeat(s)+'☆'.repeat(5-s);updateStarDisplay()} function retryQuiz(){$('quiz-result').style.display='none';$('quiz-home').style.display='block';totalStars=0;updateStarDisplay()} function updateStarDisplay(){const s=Math.min(totalStars,5);$('star-display').textContent='⭐'.repeat(s)+'☆'.repeat(5-s);$('star-count-text').textContent=`모은 별: ${totalStars}개`}
+function sendChat(){const inp=$('chat-input'),msg=inp.value.trim();if(!msg)return;inp.value='';addMsg(msg,'user-msg');const reply=/도형|원|삼각형|사각형|별|입체/.test(msg)?`좋은 질문이야! ${msg}는 생활 속에서 자주 볼 수 있어 😊`:'나는 도형만 알아! 도형에 대해 물어봐줘 😊';addMsg(reply,'dodo-msg')} function addMsg(t,cls){const d=document.createElement('div');d.className='chat-msg '+cls;d.textContent=t;$('chat-box').appendChild(d);$('chat-box').scrollTop=$('chat-box').scrollHeight}
+renderShapes();renderStoryList();updateStarDisplay();
+</script>
+</body></html>
